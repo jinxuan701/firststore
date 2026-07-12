@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>远洋货轮遇险救援 · 卫星互联网应急通信场景动画</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- 海面 canvas -->
+  <canvas id="ocean-canvas"></canvas>
+  <canvas id="rain-canvas"></canvas>
+
+  <!-- 顶部 HUD -->
+  <header class="hud-top">
+    <div class="hud-brand">
+      <span class="brand-dot alert"></span>
+      <span class="brand-text">EMERGENCY · SCENARIO</span>
+    </div>
+    <div class="hud-meta">
+      <div class="meta-item">
+        <span class="meta-label">场景</span>
+        <span class="meta-value">远洋货轮遇险求救</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">位置</span>
+        <span class="meta-value">东印度洋 · 04°22'S · 087°15'E</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">时间</span>
+        <span class="meta-value" id="clock">00:00:00</span>
+      </div>
+    </div>
+    <div class="hud-actions">
+      <button class="hud-btn" id="replayBtn" title="重放">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/>
+        </svg>
+      </button>
+      <button class="hud-btn" id="pauseBtn" title="暂停/继续">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="6" y="5" width="4" height="14"/>
+          <rect x="14" y="5" width="4" height="14"/>
+        </svg>
+      </button>
+      <button class="hud-btn primary" id="startBtn">▶ 启动模拟</button>
+    </div>
+  </header>
+
+  <!-- 主舞台 -->
+  <main class="stage">
+    <!-- 卫星层 -->
+    <div class="layer layer-sky" id="layerSky">
+      <div class="sat-orbit leo">
+        <div class="satellite" id="satellite">
+          <div class="sat-body">🛰️</div>
+          <div class="sat-beam"></div>
+        </div>
+      </div>
+      <div class="clouds">
+        <div class="cloud c1"></div>
+        <div class="cloud c2"></div>
+        <div class="cloud c3"></div>
+      </div>
+    </div>
+
+    <!-- 海面层 -->
+    <div class="layer layer-sea" id="layerSea">
+      <svg class="sea-svg" viewBox="0 0 1600 600" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0a1a3a"/>
+            <stop offset="50%" stop-color="#04102a"/>
+            <stop offset="100%" stop-color="#02071a"/>
+          </linearGradient>
+          <linearGradient id="shipGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#c94a3a"/>
+            <stop offset="100%" stop-color="#7a1e1a"/>
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="1600" height="600" fill="url(#seaGrad)"/>
+        <!-- 远景岛屿 -->
+        <path d="M 100 380 L 200 340 L 280 360 L 320 380 Z" fill="#0a1838" opacity="0.5"/>
+        <!-- 波浪 -->
+        <g class="wave-layer">
+          <path class="wave w1" d="M 0 420 Q 200 400 400 420 T 800 420 T 1200 420 T 1600 420 L 1600 600 L 0 600 Z" fill="rgba(0, 200, 255, 0.06)"/>
+          <path class="wave w2" d="M 0 460 Q 200 440 400 460 T 800 460 T 1200 460 T 1600 460 L 1600 600 L 0 600 Z" fill="rgba(0, 200, 255, 0.08)"/>
+          <path class="wave w3" d="M 0 500 Q 200 480 400 500 T 800 500 T 1200 500 T 1600 500 L 1600 600 L 0 600 Z" fill="rgba(0, 200, 255, 0.1)"/>
+        </g>
+
+        <!-- 货轮 -->
+        <g class="ship" id="ship">
+          <g class="ship-body">
+            <!-- 船体 -->
+            <path d="M 700 380 L 900 380 L 880 430 L 720 430 Z" fill="url(#shipGrad)" stroke="#ff8866" stroke-width="1"/>
+            <!-- 货舱 -->
+            <rect x="720" y="340" width="160" height="42" fill="#1a0a0a" stroke="#ff8866" stroke-width="1"/>
+            <rect x="730" y="350" width="30" height="20" fill="rgba(255, 100, 80, 0.3)"/>
+            <rect x="770" y="350" width="30" height="20" fill="rgba(255, 100, 80, 0.3)"/>
+            <rect x="810" y="350" width="30" height="20" fill="rgba(255, 100, 80, 0.3)"/>
+            <rect x="850" y="350" width="20" height="20" fill="rgba(255, 100, 80, 0.3)"/>
+            <!-- 驾驶台 -->
+            <rect x="850" y="310" width="40" height="30" fill="#0a0a1a" stroke="#00d4ff" stroke-width="1"/>
+            <!-- 桅杆 -->
+            <line x1="755" y1="340" x2="755" y2="270" stroke="#00d4ff" stroke-width="2"/>
+            <!-- 天线 -->
+            <circle cx="755" cy="265" r="6" fill="#00d4ff"/>
+            <circle cx="755" cy="265" r="12" fill="none" stroke="#00d4ff" stroke-width="1" class="antenna-pulse"/>
+            <circle cx="755" cy="265" r="20" fill="none" stroke="#00d4ff" stroke-width="1" class="antenna-pulse delay"/>
+            <!-- 船名 -->
+            <text x="800" y="415" text-anchor="middle" fill="#fff" font-size="12" font-family="monospace" font-weight="700">MV STAR-LINK</text>
+          </g>
+          <!-- 倾斜组 -->
+          <g class="ship-tilt">
+            <animateTransform id="tiltAnim" attributeName="transform" type="rotate" from="0 800 380" to="-12 800 380" dur="0.6s" begin="indefinite" fill="freeze"/>
+          </g>
+        </g>
+
+        <!-- 求救信号波 -->
+        <circle class="sos-wave sw1" cx="755" cy="265" r="0" fill="none" stroke="#ff4757" stroke-width="2" opacity="0"/>
+        <circle class="sos-wave sw2" cx="755" cy="265" r="0" fill="none" stroke="#ff4757" stroke-width="2" opacity="0"/>
+        <circle class="sos-wave sw3" cx="755" cy="265" r="0" fill="none" stroke="#ff4757" stroke-width="2" opacity="0"/>
+
+        <!-- 救援船 (后期进入) -->
+        <g class="rescue-ship" id="rescueShip" opacity="0">
+          <path d="M 1500 400 L 1560 400 L 1550 425 L 1510 425 Z" fill="#ffb547" stroke="#fff" stroke-width="1"/>
+          <rect x="1515" y="385" width="30" height="15" fill="#7a4a1a" stroke="#fff" stroke-width="0.5"/>
+          <rect x="1525" y="370" width="15" height="15" fill="#1a1a1a" stroke="#fff" stroke-width="0.5"/>
+          <text x="1530" y="420" text-anchor="middle" fill="#fff" font-size="8" font-family="monospace" font-weight="700">RESCUE</text>
+        </g>
+
+        <!-- 搜救区域光圈 -->
+        <ellipse class="search-zone" id="searchZone" cx="800" cy="450" rx="0" ry="0" fill="none" stroke="#00ffa3" stroke-width="2" stroke-dasharray="8 4" opacity="0"/>
+      </svg>
+    </div>
+
+    <!-- 直升机 -->
+    <div class="rescue-helicopter" id="helicopter">
+      <div class="hel-body">🚁</div>
+      <div class="hel-rotor"></div>
+      <div class="hel-trail"></div>
+    </div>
+
+    <!-- 字幕条 -->
+    <div class="caption-bar" id="captionBar">
+      <div class="caption-stage" id="captionStage">点击右上角「启动模拟」按钮，开始演示远洋货轮遇险求救 → 卫星应急通信 → AI 调度救援全流程</div>
+    </div>
+
+    <!-- 阶段指示器 -->
+    <div class="stage-timeline">
+      <div class="stage-item" data-stage="1">
+        <div class="stage-dot"></div>
+        <div class="stage-label">T+0s<br/>险情发生</div>
+      </div>
+      <div class="stage-item" data-stage="2">
+        <div class="stage-dot"></div>
+        <div class="stage-label">T+0.5s<br/>信号发出</div>
+      </div>
+      <div class="stage-item" data-stage="3">
+        <div class="stage-dot"></div>
+        <div class="stage-label">T+1s<br/>卫星捕获</div>
+      </div>
+      <div class="stage-item" data-stage="4">
+        <div class="stage-dot"></div>
+        <div class="stage-label">T+2s<br/>AI 决策</div>
+      </div>
+      <div class="stage-item" data-stage="5">
+        <div class="stage-dot"></div>
+        <div class="stage-label">T+3min<br/>救援抵达</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 信息面板 -->
+  <aside class="info-panel" id="infoPanel">
+    <div class="panel-header">
+      <h3>实时态势</h3>
+      <span class="panel-status" id="panelStatus">就绪</span>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-row">
+        <span>船名</span><strong>MV STAR-LINK</strong>
+      </div>
+      <div class="panel-row">
+        <span>类型</span><strong>远洋散货船 · 25,000 DWT</strong>
+      </div>
+      <div class="panel-row">
+        <span>船员</span><strong>23 人</strong>
+      </div>
+      <div class="panel-row">
+        <span>位置</span><strong>04°22'S · 087°15'E</strong>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h4>链路状态</h4>
+      <div class="link-bar">
+        <div class="link-fill" id="linkFill" style="width: 0%"></div>
+      </div>
+      <div class="link-metrics">
+        <div><span>时延</span><strong id="latency">— ms</strong></div>
+        <div><span>丢包</span><strong id="packetLoss">0%</strong></div>
+        <div><span>带宽</span><strong id="bandwidth">— Mbps</strong></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h4>AI 研判</h4>
+      <div class="ai-log" id="aiLog">
+        <div class="log-item pending">⏳ 等待事件触发</div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <h4>事件时间线</h4>
+      <div class="event-log" id="eventLog">
+        <div class="event-item">
+          <span class="event-time">系统</span>
+          <span class="event-msg">应急场景已加载</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 底部预警条 -->
+  <div class="alert-banner" id="alertBanner">
+    <div class="alert-pulse"></div>
+    <div class="alert-content">
+      <span class="alert-icon">⚠️</span>
+      <span class="alert-text" id="alertText">卫星互联网海洋连接服务 · 应急通信场景模拟</span>
+    </div>
+    <div class="alert-time" id="alertTime">--:--:--</div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
